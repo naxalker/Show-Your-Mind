@@ -61,7 +61,7 @@ public partial class @TouchAction: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""d37ed8f6-45ab-47e9-8e59-7f4be2ddd4ff"",
-                    ""path"": """",
+                    ""path"": ""<Touchscreen>/Press"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
