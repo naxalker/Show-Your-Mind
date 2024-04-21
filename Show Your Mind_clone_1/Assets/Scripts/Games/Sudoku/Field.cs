@@ -12,33 +12,34 @@ public class Field : NetworkBehaviour
     private const float CellSize = 1f;
 
     private MobileInput _input;
-    private SudokuGameManager _gameManager;
+    private SudokuClientGameManager _gameManager;
 
     private Cell[,] _cells = new Cell[9, 9];
     private int[,] _correctField = new int[9, 9];
     private int[,] _userField = new int[9, 9];
 
     [Inject]
-    private void Construct(MobileInput input)
+    private void Construct(MobileInput input, SudokuClientGameManager gameManager)
     {
+        Debug.Log("Construct");
         _input = input;
-    }
-
-    public void Init(SudokuGameManager sudokuGameManager)
-    {
-        if (IsServer)
-        {
-            (_correctField, _userField) = FieldGenerator.GenerateField(39);
-        }
-
-        _gameManager = sudokuGameManager;
+        _gameManager = gameManager;
     }
 
     public override void OnNetworkSpawn()
     {
-        if (IsClient)
+        if (IsServer)
         {
-            Debug.Log("fdfdf");
+            Debug.Log("Generating field...");
+            (_correctField, _userField) = FieldGenerator.GenerateField(39);
+            Debug.Log("Correct Matrix");
+            LogMatrix(_correctField);
+            Debug.Log("User Matrix");
+            LogMatrix(_userField);
+        }
+
+        if (IsClient && IsOwner)
+        {
             foreach (Cell cell in GetComponentsInChildren<Cell>())
             {
                 int xIndex = (int)(cell.transform.position.x + 4 * CellSize);
@@ -55,12 +56,12 @@ public class Field : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        if (IsClient)
+        if (NetworkManager.Singleton.IsClient)
         {
             _input.OnTouchPerformed -= OnTouchPerformedHandler;
         }
     }
-
+    
     [Rpc(SendTo.Server)]
     private void SubmitFieldServerRpc(RpcParams rpcParams = default)
     {
@@ -129,6 +130,8 @@ public class Field : NetworkBehaviour
     [Rpc(SendTo.Server)]
     private void ValidateCellServerRpc(int line, int column, int value, RpcParams rpcParams = default)
     {
+        Debug.Log($"Validating cell ({line}, {column}) from Client Id: {rpcParams.Receive.SenderClientId}.");
+
         ValidateCellClientRpc(
             line,
             column,
@@ -140,6 +143,8 @@ public class Field : NetworkBehaviour
     [Rpc(SendTo.SpecifiedInParams)]
     private void ValidateCellClientRpc(int line, int column, int value, bool isCorrect, RpcParams rpcParams)
     {
+        Debug.Log($"Cell ({line}, {column}) {(isCorrect == true ? "has" : "has NOT")} been validated.");
+
         _cells[line, column].SetCell(value, isCorrect);
     }
 

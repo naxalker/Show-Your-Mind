@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using Zenject;
 
 public class ActionButtonsController : MonoBehaviour
 {
@@ -9,14 +10,18 @@ public class ActionButtonsController : MonoBehaviour
     [SerializeField] private ToggleButton _notesModeButton;
     [SerializeField] private ToggleButton[] _digitButtons;
 
-    private SudokuGameManager _gameManager;
+    private SudokuClientGameManager _gameManager;
 
     private Action<bool>[] delegates = new Action<bool>[9];
 
+    [Inject]
+    private void Construct(SudokuClientGameManager gameManager)
+    {
+        _gameManager = gameManager;
+    }
+
     private void Awake()
     {
-        _gameManager = FindObjectOfType<SudokuGameManager>();
-
         _backButton.onClick.AddListener(() =>
         {
         });
@@ -97,16 +102,6 @@ public class ActionButtonsController : MonoBehaviour
         else
         {
             _gameManager.SelectedDigit = 0;
-        }
-    }
-
-    private void Reset()
-    {
-        _eraseButton.Unselect();
-        _notesModeButton.Unselect();
-        foreach(var digitButton in _digitButtons)
-        {
-            digitButton.Unselect();
         }
     }
 }
