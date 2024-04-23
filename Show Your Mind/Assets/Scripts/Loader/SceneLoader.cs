@@ -11,7 +11,7 @@ public class SceneLoader
     {
         _zenjectSceneLoader.Load(container =>
         {
-            container.Bind<T>().AsSingle().WithArguments(arguments).NonLazy();
+            container.BindInterfacesAndSelfTo<T>().AsSingle().WithArguments(arguments).NonLazy();
         }, (int)SceneID.Gameplay);
     }
 }

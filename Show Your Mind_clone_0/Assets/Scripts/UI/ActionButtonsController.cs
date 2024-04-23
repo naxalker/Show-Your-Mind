@@ -1,3 +1,4 @@
+using DG.Tweening;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,18 +7,20 @@ using Zenject;
 public class ActionButtonsController : MonoBehaviour
 {
     [SerializeField] private Button _backButton;
-    [SerializeField] private ToggleButton _eraseButton;
-    [SerializeField] private ToggleButton _notesModeButton;
-    [SerializeField] private ToggleButton[] _digitButtons;
+    [SerializeField] private Toggle _eraseButton;
+    [SerializeField] private Toggle _notesModeButton;
+    [SerializeField] private Toggle[] _digitButtons;
 
     private SudokuClientGameManager _gameManager;
+    private ColorPalette _palette;
 
-    private Action<bool>[] delegates = new Action<bool>[9];
+    private Toggle _currentDigitButton;
 
     [Inject]
-    private void Construct(SudokuClientGameManager gameManager)
+    private void Construct(SudokuClientGameManager gameManager, ColorPalette palette)
     {
         _gameManager = gameManager;
+        _palette = palette;
     }
 
     private void Awake()
@@ -29,79 +32,54 @@ public class ActionButtonsController : MonoBehaviour
 
     private void OnEnable()
     {
-        _eraseButton.OnToggled += EraseButtonToggledHandler;
-        _notesModeButton.OnToggled += NotesModeButtonToggledHandler;
+        _eraseButton.onValueChanged.AddListener((isOn) =>
+        {
+            if (isOn && _currentDigitButton != null)
+            {
+                _currentDigitButton.isOn = false;
+            }
+
+            _gameManager.IsEraseMode = isOn;
+            ChangeButtonColor(_eraseButton);
+        });
+
+        _notesModeButton.onValueChanged.AddListener((isOn) =>
+        {
+            _gameManager.IsNotesMode = isOn;
+            ChangeButtonColor(_notesModeButton);
+        });
 
         for (int i = 0; i < _digitButtons.Length; i++)
         {
             int localI = i;
 
-            Action<bool> handler = value =>
+            _digitButtons[i].onValueChanged.AddListener((isOn) =>
             {
-                DigitButtonToggledHandler(localI, value);
-            };
+                if (isOn)
+                {
+                    _currentDigitButton = _digitButtons[localI];
+                    _gameManager.SelectedDigit = localI + 1;
+                    _eraseButton.isOn = false;
+                }
+                else
+                {
+                    _gameManager.SelectedDigit = 0;
+                }
 
-            delegates[i] = handler;
-            _digitButtons[i].OnToggled += handler;
+                ChangeButtonColor(_digitButtons[localI]);
+            });
         }
     }
 
-    private void OnDisable()
+    private void ChangeButtonColor(Toggle button)
     {
-        _eraseButton.OnToggled -= EraseButtonToggledHandler;
-        _notesModeButton.OnToggled -= NotesModeButtonToggledHandler;
-
-        for (int i = 0; i < _digitButtons.Length; i++)
+        if (button.isOn)
         {
-            _digitButtons[i].OnToggled -= delegates[i];
-        }
-    }
-
-    private void EraseButtonToggledHandler(bool isSelected)
-    {
-        if (isSelected)
-        {
-            _gameManager.IsEraseMode = true;
-            _notesModeButton.Unselect();
+            button.image.DOColor(_palette.MainColor, .3f);
         }
         else
         {
-            _gameManager.IsEraseMode = false;
-            _eraseButton.Unselect();
-        }
-    }
-
-    private void NotesModeButtonToggledHandler(bool isSelected)
-    {
-        if (isSelected)
-        {
-            _gameManager.IsNotesMode = true;
-            _eraseButton.Unselect();
-        }
-        else
-        {
-            _gameManager.IsNotesMode = false;
-            _notesModeButton.Unselect();
-        }
-    }
-
-    private void DigitButtonToggledHandler(int buttonIndex, bool isSelected)
-    {
-        if (isSelected)
-        {
-            for (int i = 0; i < _digitButtons.Length; i++)
-            {
-                if (i == buttonIndex) continue;
-
-                _digitButtons[i].Unselect();
-            }
-            _eraseButton.Unselect();
-
-            _gameManager.SelectedDigit = buttonIndex + 1;
-        }
-        else
-        {
-            _gameManager.SelectedDigit = 0;
+            button.image.DOColor(Color.white, .3f);
         }
     }
 }

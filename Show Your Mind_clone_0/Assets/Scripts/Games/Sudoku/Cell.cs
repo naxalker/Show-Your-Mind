@@ -9,12 +9,18 @@ public class Cell : MonoBehaviour
     private int _currentValue;
     private bool _isInteractable;
 
+    public bool IsInteractable => _isInteractable;
+
     public void InitCell(int value)
     {
         if (value != 0)
         {
             _label.text = value.ToString();
             _label.enabled = true;
+        }
+        else
+        {
+            _isInteractable = true;
         }
     }
 

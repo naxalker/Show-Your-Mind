@@ -1,6 +1,8 @@
+using DG.Tweening;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using Zenject;
 
 public class ToggleButton : MonoBehaviour
 {
@@ -8,6 +10,14 @@ public class ToggleButton : MonoBehaviour
 
     [field: SerializeField] public Button Button {  get; private set; }
     private bool _isSelected;
+
+    private ColorPalette _palette;
+
+    [Inject]
+    private void Construct(ColorPalette palette)
+    {
+        _palette = palette;
+    }
 
     private void Awake()
     {
@@ -17,11 +27,11 @@ public class ToggleButton : MonoBehaviour
 
             if (_isSelected)
             {
-                Button.image.color = Color.green;
+                Button.image.DOColor(_palette.MainColor, 1f);
             }
             else
             {
-                Button.image.color = Color.white;
+                Button.image.DOColor(Color.white, 1f);
             }
 
             OnToggled?.Invoke(_isSelected);
@@ -31,6 +41,7 @@ public class ToggleButton : MonoBehaviour
     public void Unselect()
     {
         _isSelected = false;
-        Button.image.color = Color.white;
+        OnToggled?.Invoke(_isSelected);
+        Button.image.DOColor(Color.white, 1f);
     }
 }

@@ -6,8 +6,8 @@ using Zenject;
 
 public class Field : NetworkBehaviour
 {
-    public event Action OnFieldCompleted;
-    public event Action OnIncorrectPlaced;
+    public event Action<ulong> OnFieldCompleted;
+    public event Action<ulong> OnIncorrectPlaced;
 
     private const float CellSize = 1f;
 
@@ -15,8 +15,8 @@ public class Field : NetworkBehaviour
     private SudokuClientGameManager _gameManager;
 
     private Cell[,] _cells = new Cell[9, 9];
-    private int[,] _correctField = new int[9, 9];
-    private int[,] _userField = new int[9, 9];
+    private int[,] _correctField;
+    private int[,] _userField;
 
     [Inject]
     private void Construct(MobileInput input, SudokuClientGameManager gameManager)
@@ -26,19 +26,15 @@ public class Field : NetworkBehaviour
         _gameManager = gameManager;
     }
 
+    public void Init(int[,] correctField, int[,] userField)
+    {
+        _correctField = correctField;
+        _userField = userField;
+    }
+
     public override void OnNetworkSpawn()
     {
-        if (IsServer)
-        {
-            Debug.Log("Generating field...");
-            (_correctField, _userField) = FieldGenerator.GenerateField(39);
-            Debug.Log("Correct Matrix");
-            LogMatrix(_correctField);
-            Debug.Log("User Matrix");
-            LogMatrix(_userField);
-        }
-
-        if (IsClient && IsOwner)
+        if (IsClient)
         {
             foreach (Cell cell in GetComponentsInChildren<Cell>())
             {
@@ -56,7 +52,7 @@ public class Field : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        if (NetworkManager.Singleton.IsClient)
+        if (IsClient)
         {
             _input.OnTouchPerformed -= OnTouchPerformedHandler;
         }
@@ -102,10 +98,15 @@ public class Field : NetworkBehaviour
             int xIndex = Mathf.FloorToInt(pos.x + maxBound);
             int yIndex = Mathf.FloorToInt(maxBound - pos.y);
 
+            if (_cells[xIndex, yIndex].IsInteractable == false) return;
+
             if (_gameManager.IsEraseMode)
             {
-                _userField[xIndex, yIndex] = 0;
-                _cells[xIndex, yIndex].SetCell(0);
+                if (_userField[xIndex, yIndex] != 0)
+                {
+                    _userField[xIndex, yIndex] = 0;
+                    _cells[xIndex, yIndex].SetCell(0);
+                }
             }
             else if (_gameManager.IsNotesMode)
             {
@@ -113,48 +114,57 @@ public class Field : NetworkBehaviour
             }
             else if (_gameManager.SelectedDigit != 0)
             {
-                ValidateCellServerRpc(xIndex, yIndex, _gameManager.SelectedDigit);
-
-                //if (_userField[xIndex, yIndex] != _correctField[xIndex, yIndex])
-                //{
-                //    OnIncorrectPlaced?.Invoke();
-                //}
-                //else if (IsUserFieldCompleted())
-                //{
-                //    OnFieldCompleted?.Invoke();
-                //}
+                _userField[xIndex, yIndex] = _gameManager.SelectedDigit;
+                ValidateCellServerRpc(xIndex, yIndex, ConvertTwoDimensionalArray(_userField));
             }
         }
     }
 
     [Rpc(SendTo.Server)]
-    private void ValidateCellServerRpc(int line, int column, int value, RpcParams rpcParams = default)
+    private void ValidateCellServerRpc(int line, int column, int[] convertedField, RpcParams rpcParams = default)
     {
-        Debug.Log($"Validating cell ({line}, {column}) from Client Id: {rpcParams.Receive.SenderClientId}.");
+        Debug.Log($"Validating cell ({line}, {column}) from Client Id: {rpcParams.Receive.SenderClientId}");
+
+        int[,] field = ConvertOneDimensionalArray(convertedField);
+        LogMatrix(field);
+
+        bool isCorrect = _correctField[line, column] == field[line, column];
+
+        if (isCorrect)
+        {
+            if (IsFieldCompleted(field))
+            {
+                OnFieldCompleted?.Invoke(rpcParams.Receive.SenderClientId);
+            }
+        }
+        else
+        {
+            OnIncorrectPlaced?.Invoke(rpcParams.Receive.SenderClientId);
+        }
 
         ValidateCellClientRpc(
             line,
             column,
-            value,
-            _correctField[line, column] == value, 
+            field[line, column],
+            isCorrect, 
             RpcTarget.Single(rpcParams.Receive.SenderClientId, RpcTargetUse.Temp));
     }
 
     [Rpc(SendTo.SpecifiedInParams)]
     private void ValidateCellClientRpc(int line, int column, int value, bool isCorrect, RpcParams rpcParams)
     {
-        Debug.Log($"Cell ({line}, {column}) {(isCorrect == true ? "has" : "has NOT")} been validated.");
+        Debug.Log($"Cell ({line}, {column}) {(isCorrect == true ? "has" : "has NOT")} been validated with value {value}.");
 
         _cells[line, column].SetCell(value, isCorrect);
     }
 
-    private bool IsUserFieldCompleted()
+    private bool IsFieldCompleted(int[,] field)
     {
         for (int i = 0; i < 9; i++)
         {
             for (int j = 0; j < 9; j++)
             {
-                if (_userField[i, j] != _correctField[i, j])
+                if (field[i, j] != _correctField[i, j])
                     return false;
             }
         }

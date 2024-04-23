@@ -1,6 +1,7 @@
 using Unity.Netcode;
+using UnityEngine;
 
-public abstract class ServerGameManager : GameManager
+public abstract class ServerGameManager : GameManager, IGameResultValidator
 {
     protected ServerGameManager()
     {
@@ -10,5 +11,15 @@ public abstract class ServerGameManager : GameManager
     public void StartServer()
     {
         NetworkManager.Singleton.StartServer();
+    }
+
+    public virtual void ProcessDefeat(ulong clientId)
+    {
+        
+    }
+
+    public virtual void ProcessVictory(ulong clientId)
+    {
+        Debug.Log($"Client {clientId} has won!");
     }
 }

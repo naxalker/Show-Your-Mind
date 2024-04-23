@@ -1,5 +1,5 @@
 public interface IGameResultValidator
 {
-    public bool IsVictory();
-    public bool IsDefeat();
+    public void ProcessVictory(ulong clientId);
+    public void ProcessDefeat(ulong clientId);
 }
