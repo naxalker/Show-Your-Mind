@@ -93,7 +93,7 @@ public class Field : NetworkBehaviour
 
     private void OnTouchPerformedHandler(Vector3 pos)
     {
-        if (_gameManager.IsGameActive == false) return;
+        if (_gameManager.IsGameActive.Value == false) return;
 
         float minBound = -4 * CellSize - CellSize / 2;
         float maxBound = 4 * CellSize + CellSize / 2;

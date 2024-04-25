@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using Zenject;
 
 public class SudokuGameManager : GameManager
 {
@@ -62,35 +61,35 @@ public class SudokuGameManager : GameManager
     {
         base.OnNetworkDespawn();
 
-        _field.OnFieldCompleted -= FieldCompletedHandler;
-        _field.OnIncorrectPlaced -= IncorrectPlacedHandler;
-        NetworkManager.Singleton.OnClientConnectedCallback -= ClientConnectedHandler;
+        if (IsServer)
+        {
+            _field.OnFieldCompleted -= FieldCompletedHandler;
+            _field.OnIncorrectPlaced -= IncorrectPlacedHandler;
+            NetworkManager.Singleton.OnClientConnectedCallback -= ClientConnectedHandler;
+        }
     }
 
     private void SpawnField()
     {
         _field = Instantiate(_fieldPrefab);
-
         var fieldNetworkObject = _field.GetComponent<NetworkObject>();
         fieldNetworkObject.Spawn();
     }
 
     private void SpawnUI()
     {
-        var gameHUD = FindObjectOfType<GameHUD>();
-
         if (IsServer)
         {
             var topyUIInstance = Instantiate(_topUIGroup);
             var topUINetworkObject = topyUIInstance.GetComponent<NetworkObject>();
             topUINetworkObject.Spawn();
-            topUINetworkObject.TrySetParent(gameHUD.transform, false);
+            topUINetworkObject.TrySetParent(GameHUD.transform, false);
         }
 
         if (IsClient)
         {
             var topyUIInstance = _container.InstantiatePrefab(_bottomUIGroup);
-            topyUIInstance.transform.SetParent(gameHUD.transform, false);
+            topyUIInstance.transform.SetParent(GameHUD.transform, false);
         }
     }
 
