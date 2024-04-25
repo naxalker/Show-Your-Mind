@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2050290764993516578}
   - component: {fileID: -7834106719629532214}
   - component: {fileID: 5623309404928379847}
+  - component: {fileID: -3337840769709370760}
   m_Layer: 0
   m_Name: ProjectContext
   m_TagString: Untagged
@@ -50,6 +51,7 @@ MonoBehaviour:
   _monoInstallers:
   - {fileID: -7834106719629532214}
   - {fileID: 5623309404928379847}
+  - {fileID: -3337840769709370760}
   _installerPrefabs: []
   _parentNewObjectsUnderContext: 1
   _editorReflectionBakingCoverageMode: 0
@@ -76,7 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fdc6f9ea37e2d464f85be0548988b6fd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _sudokuConfig: {fileID: 11400000, guid: 8557890ebb6d0474bb96edb6e35ae57a, type: 2}
+  _gameConfig: {fileID: 11400000, guid: 2f9fbc71b74056344ab0f364dfe66e8e, type: 2}
 --- !u!114 &5623309404928379847
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90,3 +92,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _colorPalette: {fileID: 11400000, guid: b86a910998aa2c94581582162cc4da64, type: 2}
+--- !u!114 &-3337840769709370760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 264188681024758211}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3905d0a57cab764a80a68cba0b9711b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

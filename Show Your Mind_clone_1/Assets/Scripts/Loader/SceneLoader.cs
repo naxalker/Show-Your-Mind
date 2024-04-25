@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class SceneLoader
 {
     private ZenjectSceneLoaderWrapper _zenjectSceneLoader;
@@ -7,11 +9,19 @@ public class SceneLoader
         _zenjectSceneLoader = zenjectSceneLoader;
     }
 
-    public void Load<T>(params object[] arguments) where T : GameManager
+    public void LoadServer(GameConfig gameConfig)
     {
         _zenjectSceneLoader.Load(container =>
         {
-            container.BindInterfacesAndSelfTo<T>().AsSingle().WithArguments(arguments).NonLazy();
+            container.BindInterfacesAndSelfTo<ServerManager>().AsSingle().WithArguments(gameConfig).NonLazy();
+        }, (int)SceneID.Gameplay);
+    }
+
+    public void LoadClient(GameConfig gameConfig)
+    {
+        _zenjectSceneLoader.Load(container =>
+        {
+            container.BindInterfacesAndSelfTo<ClientManager>().AsSingle().WithArguments(gameConfig).NonLazy();
         }, (int)SceneID.Gameplay);
     }
 }

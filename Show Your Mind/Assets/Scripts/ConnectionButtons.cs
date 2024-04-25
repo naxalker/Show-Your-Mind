@@ -1,4 +1,3 @@
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
@@ -7,25 +6,26 @@ public class ConnectionButtons : MonoBehaviour
 {
     [SerializeField] private Button _serverButton;
     [SerializeField] private Button _clientButton;
+    [SerializeField] private GameConfig _gameConfig;
 
-    private SceneLoaderMediator _sceneLoaderMediator;
+    private SceneLoader _sceneLoader;
 
     [Inject]
-    private void Construct(SceneLoaderMediator sceneLoaderMediator)
+    private void Construct(SceneLoader sceneLoader)
     {
-        _sceneLoaderMediator = sceneLoaderMediator;
+        _sceneLoader = sceneLoader;
     }
 
     private void Awake()
     {
         _serverButton.onClick.AddListener(() =>
         {
-            _sceneLoaderMediator.LoadSudokuServer();
+            _sceneLoader.LoadServer(_gameConfig);
         });
 
         _clientButton.onClick.AddListener(() =>
         {
-            _sceneLoaderMediator.LoadSudokuClient();
+            _sceneLoader.LoadClient(_gameConfig);
         });
     }
 }

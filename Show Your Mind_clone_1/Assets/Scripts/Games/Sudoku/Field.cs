@@ -12,36 +12,41 @@ public class Field : NetworkBehaviour
     private const float CellSize = 1f;
 
     private MobileInput _input;
-    private SudokuClientGameManager _gameManager;
+    private SudokuGameManager _gameManager;
 
     private Cell[,] _cells = new Cell[9, 9];
     private int[,] _correctField;
     private int[,] _userField;
 
     [Inject]
-    private void Construct(MobileInput input, SudokuClientGameManager gameManager)
+    private void Construct(MobileInput input, SudokuGameManager gameManager)
     {
         Debug.Log("Construct");
         _input = input;
         _gameManager = gameManager;
     }
 
-    public void Init(int[,] correctField, int[,] userField)
-    {
-        _correctField = correctField;
-        _userField = userField;
-    }
-
     public override void OnNetworkSpawn()
     {
+        if (IsServer)
+        {
+            (_correctField, _userField) = FieldGenerator.GenerateField(39);
+
+            Debug.Log("Correct Field");
+            LogMatrix(_correctField);
+
+            Debug.Log("User Field");
+            LogMatrix(_userField);
+        }
+
         if (IsClient)
         {
             foreach (Cell cell in GetComponentsInChildren<Cell>())
             {
-                int xIndex = (int)(cell.transform.position.x + 4 * CellSize);
-                int yIndex = (int)(4 * CellSize - cell.transform.position.y);
+                int column = (int)(cell.transform.position.x + 4 * CellSize);
+                int row = (int)(4 * CellSize - cell.transform.position.y);
 
-                _cells[xIndex, yIndex] = cell;
+                _cells[row, column] = cell;
             }
 
             SubmitFieldServerRpc();
@@ -95,27 +100,35 @@ public class Field : NetworkBehaviour
 
         if (pos.x >= minBound && pos.x < maxBound && pos.y >= minBound && pos.y < maxBound)
         {
-            int xIndex = Mathf.FloorToInt(pos.x + maxBound);
-            int yIndex = Mathf.FloorToInt(maxBound - pos.y);
+            int row = Mathf.FloorToInt(maxBound - pos.y);
+            int column = Mathf.FloorToInt(pos.x + maxBound);
 
-            if (_cells[xIndex, yIndex].IsInteractable == false) return;
+            if (_cells[row, column].IsInteractable == false) return;
 
             if (_gameManager.IsEraseMode)
             {
-                if (_userField[xIndex, yIndex] != 0)
+                if (_userField[row, column] != 0)
                 {
-                    _userField[xIndex, yIndex] = 0;
-                    _cells[xIndex, yIndex].SetCell(0);
+                    _userField[row, column] = 0;
+                    _cells[row, column].SetCell(0);
                 }
             }
             else if (_gameManager.IsNotesMode)
             {
-                _cells[xIndex, yIndex].SetNoteDigit(_gameManager.SelectedDigit);
+                _cells[row, column].SetNoteDigit(_gameManager.SelectedDigit);
             }
             else if (_gameManager.SelectedDigit != 0)
             {
-                _userField[xIndex, yIndex] = _gameManager.SelectedDigit;
-                ValidateCellServerRpc(xIndex, yIndex, ConvertTwoDimensionalArray(_userField));
+                if (_userField[row, column] == _gameManager.SelectedDigit)
+                {
+                    _userField[row, column] = 0;
+                    _cells[row, column].SetCell(0);
+                }
+                else
+                {
+                    _userField[row, column] = _gameManager.SelectedDigit;
+                    ValidateCellServerRpc(row, column, ConvertTwoDimensionalArray(_userField));
+                }
             }
         }
     }
@@ -126,7 +139,6 @@ public class Field : NetworkBehaviour
         Debug.Log($"Validating cell ({line}, {column}) from Client Id: {rpcParams.Receive.SenderClientId}");
 
         int[,] field = ConvertOneDimensionalArray(convertedField);
-        LogMatrix(field);
 
         bool isCorrect = _correctField[line, column] == field[line, column];
 

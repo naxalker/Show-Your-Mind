@@ -377,6 +377,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _serverButton: {fileID: 1841231562}
   _clientButton: {fileID: 1529955645}
+  _gameConfig: {fileID: 11400000, guid: 2f9fbc71b74056344ab0f364dfe66e8e, type: 2}
 --- !u!1 &275359390
 GameObject:
   m_ObjectHideFlags: 0
