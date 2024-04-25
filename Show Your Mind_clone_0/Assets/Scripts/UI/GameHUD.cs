@@ -18,4 +18,9 @@ public class GameHUD : MonoBehaviour
     {
         _gameOverUI.SetResultText(resultText);
     }
+
+    public void UpdateAttempts()
+    {
+
+    }
 }

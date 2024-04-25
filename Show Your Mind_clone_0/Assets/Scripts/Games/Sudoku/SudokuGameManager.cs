@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 public class SudokuGameManager : GameManager
 {
+    public event Action<ulong, uint> OnAttemptSpent;
+
     private const uint MaxAttempts = 3;
 
     [SerializeField] private Field _fieldPrefab;
@@ -40,9 +43,10 @@ public class SudokuGameManager : GameManager
     {
         base.OnNetworkSpawn();
 
-        _container.BindInstance(this);
+        _container.BindInstance(this).AsSingle();
 
         NetworkManager.PrefabHandler.AddHandler(_fieldPrefab.gameObject, new ZenjectNetCodeFactory(_fieldPrefab.gameObject, _container));
+        NetworkManager.PrefabHandler.AddHandler(_topUIGroup.gameObject, new ZenjectNetCodeFactory(_topUIGroup.gameObject, _container));
 
         if (IsServer)
         {
@@ -72,6 +76,7 @@ public class SudokuGameManager : GameManager
     private void SpawnField()
     {
         _field = Instantiate(_fieldPrefab);
+        _container.Inject(_field);
         var fieldNetworkObject = _field.GetComponent<NetworkObject>();
         fieldNetworkObject.Spawn();
     }
@@ -80,8 +85,9 @@ public class SudokuGameManager : GameManager
     {
         if (IsServer)
         {
-            var topyUIInstance = Instantiate(_topUIGroup);
-            var topUINetworkObject = topyUIInstance.GetComponent<NetworkObject>();
+            var topUIInstance = Instantiate(_topUIGroup);
+            _container.InjectGameObject(topUIInstance.gameObject);
+            var topUINetworkObject = topUIInstance.GetComponent<NetworkObject>();
             topUINetworkObject.Spawn();
             topUINetworkObject.TrySetParent(GameHUD.transform, false);
         }
@@ -106,6 +112,8 @@ public class SudokuGameManager : GameManager
     private void IncorrectPlacedHandler(ulong clientId)
     {
         _clientAttempts[clientId]--;
+
+        OnAttemptSpent?.Invoke(clientId, _clientAttempts[clientId]);
 
         if (_clientAttempts[clientId] == 0)
         {
