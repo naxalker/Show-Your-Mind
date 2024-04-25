@@ -21,7 +21,6 @@ public class Field : NetworkBehaviour
     [Inject]
     private void Construct(MobileInput input, SudokuGameManager gameManager)
     {
-        Debug.Log("Construct");
         _input = input;
         _gameManager = gameManager;
     }

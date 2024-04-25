@@ -1,12 +1,12 @@
-using System.Collections.Generic;
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Zenject;
 
 public abstract class GameManager : NetworkBehaviour, IGameResultValidator
 {
     public NetworkVariable<bool> IsGameActive = new NetworkVariable<bool>();
+    public NetworkVariable<float> GameTime = new NetworkVariable<float>();
 
     protected DiContainer _container;
     protected GameHUD GameHUD;
@@ -24,6 +24,8 @@ public abstract class GameManager : NetworkBehaviour, IGameResultValidator
         if (IsServer)
         {
             IsGameActive.Value = true;
+            GameTime.Value = 0;
+            StartCoroutine(UpdateGameTime());
         }
 
         GameHUD = FindObjectOfType<GameHUD>();
@@ -32,12 +34,16 @@ public abstract class GameManager : NetworkBehaviour, IGameResultValidator
     public virtual void ProcessVictory(ulong clientId)
     {
         IsGameActive.Value = false;
+        StopAllCoroutines();
+
         ShowGameOverUIClientsRpc(clientId, true);
     }
 
     public virtual void ProcessDefeat(ulong clientId)
     {
         IsGameActive.Value = false;
+        StopAllCoroutines();
+
         ShowGameOverUIClientsRpc(clientId, false);
     }
 
@@ -65,6 +71,18 @@ public abstract class GameManager : NetworkBehaviour, IGameResultValidator
             {
                 GameHUD.ShowGameOverUI("Поздравляем!!! Вы победили.");
             }
+        }
+    }
+
+    private IEnumerator UpdateGameTime()
+    {
+        var delay = new WaitForSecondsRealtime(1f);
+
+        while (true)
+        {
+            yield return delay;
+
+            GameTime.Value += 1f;
         }
     }
 }
