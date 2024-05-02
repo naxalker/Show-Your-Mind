@@ -1,22 +1,17 @@
 using Unity.Netcode;
 using Zenject;
 
-public class ClientManager : IInitializable
+public class ClientManager : MultiplayerManager
 {
-    private GameConfig _config;
-    private DiContainer _container;
-
-    public ClientManager(DiContainer container, GameConfig config)
+    public ClientManager(DiContainer container, MenuGameConfig config) : base(container, config)
     {
-        _config = config;
-        _container = container;
     }
 
-    public void Initialize()
+    public override void Initialize()
     {
         NetworkManager.Singleton.StartClient();
 
         NetworkManager.Singleton.PrefabHandler
-            .AddHandler(_config.GameManagerPrefab.gameObject, new ZenjectNetCodeFactory(_config.GameManagerPrefab.gameObject, _container));
+            .AddHandler(Config.MultiplayerGameManager.gameObject, new ZenjectNetCodeFactory(Config.MultiplayerGameManager.gameObject, Container));
     }
 }

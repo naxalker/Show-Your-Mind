@@ -5,26 +5,30 @@ using Zenject;
 
 public class GameTime : MonoBehaviour
 {
-    private SudokuGameManager _gameManager;
+    private ITimeCounter _timeCounter;
 
     private TMP_Text _timeLabel;
 
     [Inject]
-    private void Construct(SudokuGameManager gameManager)
+    private void Construct(ITimeCounter timeCounter)
     {
-        Debug.Log(name);
-        _gameManager = gameManager;
+        _timeCounter = timeCounter;
     }
 
     private void Start()
     {
-        _gameManager.GameTime.OnValueChanged += GameTimeValueChangedHandler;
+        _timeCounter.GameTimeChanged += GameTimeValueChangedHandler;
         _timeLabel = GetComponent<TMP_Text>();
     }
 
-    private void GameTimeValueChangedHandler(float previousValue, float newValue)
+    private void OnDestroy()
     {
-        TimeSpan timeSpan = TimeSpan.FromSeconds(newValue);
+        _timeCounter.GameTimeChanged -= GameTimeValueChangedHandler;
+    }
+
+    private void GameTimeValueChangedHandler(float newTime)
+    {
+        TimeSpan timeSpan = TimeSpan.FromSeconds(newTime);
         _timeLabel.text = "Время:\n" + timeSpan.ToString(@"mm\:ss");
     }
 }

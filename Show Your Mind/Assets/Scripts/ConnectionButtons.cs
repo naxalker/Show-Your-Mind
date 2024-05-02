@@ -6,7 +6,7 @@ public class ConnectionButtons : MonoBehaviour
 {
     [SerializeField] private Button _serverButton;
     [SerializeField] private Button _clientButton;
-    [SerializeField] private GameConfig _gameConfig;
+    [SerializeField] private MenuGameConfig _gameConfig;
 
     private SceneLoader _sceneLoader;
 
@@ -20,12 +20,12 @@ public class ConnectionButtons : MonoBehaviour
     {
         _serverButton.onClick.AddListener(() =>
         {
-            _sceneLoader.LoadServer(_gameConfig);
+            _sceneLoader.Load<ServerManager>(_gameConfig);
         });
 
         _clientButton.onClick.AddListener(() =>
         {
-            _sceneLoader.LoadClient(_gameConfig);
+            _sceneLoader.Load<ClientManager>(_gameConfig);
         });
     }
 }

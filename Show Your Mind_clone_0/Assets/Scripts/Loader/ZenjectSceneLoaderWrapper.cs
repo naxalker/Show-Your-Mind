@@ -11,6 +11,11 @@ public class ZenjectSceneLoaderWrapper
         _zenjectSceneLoader = zenjectSceneLoader;
     }
 
+    public void Load(int sceneID)
+    {
+        _zenjectSceneLoader.LoadScene(sceneID, LoadSceneMode.Single);
+    }
+
     public void Load(Action<DiContainer> action, int sceneID)
     {
         _zenjectSceneLoader.LoadScene(sceneID, LoadSceneMode.Single, container => action?.Invoke(container));

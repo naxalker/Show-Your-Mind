@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class SceneLoader
 {
     private ZenjectSceneLoaderWrapper _zenjectSceneLoader;
@@ -9,19 +7,20 @@ public class SceneLoader
         _zenjectSceneLoader = zenjectSceneLoader;
     }
 
-    public void LoadServer(GameConfig gameConfig)
+    public void Load(GameManager gameManager, GameConfig gameConfig)
     {
         _zenjectSceneLoader.Load(container =>
         {
-            container.BindInterfacesAndSelfTo<ServerManager>().AsSingle().WithArguments(gameConfig).NonLazy();
-        }, (int)SceneID.Gameplay);
+            var gameManagerInstance = container.InstantiatePrefabForComponent<GameManager>(gameManager);
+            gameManagerInstance.Initialize(gameConfig);
+        }, (int)SceneID.SingleplayerScene);
     }
 
-    public void LoadClient(GameConfig gameConfig)
+    public void Load<T>(MenuGameConfig gameConfig) where T : MultiplayerManager
     {
         _zenjectSceneLoader.Load(container =>
         {
-            container.BindInterfacesAndSelfTo<ClientManager>().AsSingle().WithArguments(gameConfig).NonLazy();
-        }, (int)SceneID.Gameplay);
+            container.BindInterfacesAndSelfTo<T>().AsSingle().WithArguments(gameConfig).NonLazy();
+        }, (int)SceneID.MultiplayerScene);
     }
 }

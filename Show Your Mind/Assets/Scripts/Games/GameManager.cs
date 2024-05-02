@@ -1,77 +1,44 @@
+using System;
 using System.Collections;
-using Unity.Netcode;
 using UnityEngine;
 using Zenject;
 
-public abstract class GameManager : NetworkBehaviour, IGameResultValidator
+public abstract class GameManager : MonoBehaviour, IGameResultValidator, ITimeCounter
 {
-    public NetworkVariable<bool> IsGameActive = new NetworkVariable<bool>();
-    public NetworkVariable<float> GameTime = new NetworkVariable<float>();
+    public event Action<GameOverResultType> OnGameOver;
+    public event Action<float> GameTimeChanged;
 
-    protected DiContainer _container;
-    protected GameHUD GameHUD;
+    public bool IsGameActive { get; private set; }
+    public float GameTime { get; private set; }
+    
+    protected DiContainer Container { get; private set; }
 
     [Inject]
     private void Construct(DiContainer container)
     {
-        _container = container;
+        Container = container;
     }
 
-    public override void OnNetworkSpawn()
+    public virtual void Initialize(GameConfig config)
+    {
+        Container.Bind<ITimeCounter>().FromInstance(this);
+    }
+
+    protected virtual void Start()
     {
         Debug.Log(GetType().Name);
 
-        if (IsServer)
-        {
-            IsGameActive.Value = true;
-            GameTime.Value = 0;
-            StartCoroutine(UpdateGameTime());
-        }
-
-        GameHUD = FindObjectOfType<GameHUD>();
+        IsGameActive = true;
+        GameTime = 0;
+        StartCoroutine(UpdateGameTime());
     }
 
-    public virtual void ProcessVictory(ulong clientId)
+    public void ProcessGameOver(GameOverResultType resultType)
     {
-        IsGameActive.Value = false;
+        IsGameActive = false;
         StopAllCoroutines();
 
-        ShowGameOverUIClientsRpc(clientId, true);
-    }
-
-    public virtual void ProcessDefeat(ulong clientId)
-    {
-        IsGameActive.Value = false;
-        StopAllCoroutines();
-
-        ShowGameOverUIClientsRpc(clientId, false);
-    }
-
-    [Rpc(SendTo.ClientsAndHost)]
-    private void ShowGameOverUIClientsRpc(ulong clientID, bool isVictory)
-    {
-        if (NetworkManager.LocalClientId == clientID)
-        {
-            if (isVictory)
-            {
-                GameHUD.ShowGameOverUI("Поздравляем!!! Вы победили.");
-            }
-            else
-            {
-                GameHUD.ShowGameOverUI("К сожалению, вы проиграли...");
-            }
-        }
-        else
-        {
-            if (isVictory)
-            {
-                GameHUD.ShowGameOverUI("К сожалению, вы проиграли...");
-            }
-            else
-            {
-                GameHUD.ShowGameOverUI("Поздравляем!!! Вы победили.");
-            }
-        }
+        OnGameOver?.Invoke(resultType);
     }
 
     private IEnumerator UpdateGameTime()
@@ -82,7 +49,9 @@ public abstract class GameManager : NetworkBehaviour, IGameResultValidator
         {
             yield return delay;
 
-            GameTime.Value += 1f;
+            GameTime += 1f;
+
+            GameTimeChanged?.Invoke(GameTime);
         }
     }
 }

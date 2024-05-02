@@ -1,9 +1,8 @@
-using Unity.Netcode;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
 
-public class AttemptsUI : NetworkBehaviour
+public class AttemptsUI : MonoBehaviour
 {
     [SerializeField] private Image[] _healthImages;
 
@@ -12,36 +11,23 @@ public class AttemptsUI : NetworkBehaviour
     [Inject]
     private void Construct(SudokuGameManager gameManager)
     {
-        Debug.Log(name);
         _gameManager = gameManager;
     }
 
-    public override void OnNetworkSpawn()
+    private void Start()
     {
-        if (IsServer)
-        {
-            _gameManager.OnAttemptSpent += AttemptSpentHandler;
-        }
+        _gameManager.OnAttemptSpent += AttemptSpentHandler;
     }
 
-    public override void OnNetworkDespawn()
+    private void OnDestroy()
     {
-        if (IsServer)
-        {
-            _gameManager.OnAttemptSpent -= AttemptSpentHandler;
-        }
+        _gameManager.OnAttemptSpent -= AttemptSpentHandler;
     }
 
-    private void AttemptSpentHandler(ulong clientId, uint leftAttempts)
+    private void AttemptSpentHandler(uint leftAttempts)
     {
-        UpdateAttemptsRpc(leftAttempts, RpcTarget.Single(clientId, RpcTargetUse.Temp));
-    }
-
-    [Rpc(SendTo.SpecifiedInParams)]
-    public void UpdateAttemptsRpc(uint leftAttemptsAmount, RpcParams rpcParams = default)
-    {
-        Color color = _healthImages[leftAttemptsAmount].color;
+        Color color = _healthImages[leftAttempts].color;
         color.a = 0;
-        _healthImages[leftAttemptsAmount].color = color;
+        _healthImages[leftAttempts].color = color;
     }
 }

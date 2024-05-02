@@ -2,23 +2,18 @@ using Unity.Netcode;
 using UnityEngine;
 using Zenject;
 
-public class ServerManager : IInitializable
+public class ServerManager : MultiplayerManager
 {
-    private GameConfig _config;
-    private DiContainer _container;
-
-    public ServerManager(DiContainer container, GameConfig config)
+    public ServerManager(DiContainer container, MenuGameConfig config) : base(container, config)
     {
-        _config = config;
-        _container = container;
     }
 
-    public void Initialize()
+    public override void Initialize()
     {
         NetworkManager.Singleton.StartServer();
         
-        var gameManagerInstance = Object.Instantiate(_config.GameManagerPrefab);
-        _container.Inject(gameManagerInstance);
+        var gameManagerInstance = Object.Instantiate(Config.MultiplayerGameManager.gameObject);
+        Container.Inject(gameManagerInstance);
         var gameManagerNetworkObject = gameManagerInstance.GetComponent<NetworkObject>();
         gameManagerNetworkObject.Spawn();
     }

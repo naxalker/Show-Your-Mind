@@ -1,13 +1,13 @@
 using System;
 using System.Text;
-using Unity.Netcode;
 using UnityEngine;
 using Zenject;
+using Random = UnityEngine.Random;
 
-public class Field : NetworkBehaviour
+public class Field : MonoBehaviour
 {
-    public event Action<ulong> OnFieldCompleted;
-    public event Action<ulong> OnIncorrectPlaced;
+    public event Action OnFieldCompleted;
+    public event Action OnIncorrectPlaced;
 
     private const float CellSize = 1f;
 
@@ -25,74 +25,36 @@ public class Field : NetworkBehaviour
         _gameManager = gameManager;
     }
 
-    public override void OnNetworkSpawn()
+    private void Start()
     {
-        if (IsServer)
+        (_correctField, _userField) = FieldGenerator.GenerateField(Random.Range(_gameManager.Config.MinCellsToRemove, _gameManager.Config.MaxCellsToRemove));
+
+        Debug.Log("Correct Field");
+        LogMatrix(_correctField);
+
+        Debug.Log("User Field");
+        LogMatrix(_userField);
+
+        foreach (Cell cell in GetComponentsInChildren<Cell>())
         {
-            (_correctField, _userField) = FieldGenerator.GenerateField(39);
+            int column = (int)(cell.transform.position.x + 4 * CellSize);
+            int row = (int)(4 * CellSize - cell.transform.position.y);
 
-            Debug.Log("Correct Field");
-            LogMatrix(_correctField);
-
-            Debug.Log("User Field");
-            LogMatrix(_userField);
+            _cells[row, column] = cell;
+            _cells[row, column].InitCell(_userField[row, column]);
         }
 
-        if (IsClient)
-        {
-            foreach (Cell cell in GetComponentsInChildren<Cell>())
-            {
-                int column = (int)(cell.transform.position.x + 4 * CellSize);
-                int row = (int)(4 * CellSize - cell.transform.position.y);
-
-                _cells[row, column] = cell;
-            }
-
-            SubmitFieldServerRpc();
-
-            _input.OnTouchPerformed += OnTouchPerformedHandler;
-        }
+        _input.OnTouchPerformed += OnTouchPerformedHandler;
     }
 
-    public override void OnNetworkDespawn()
+    private void OnDestroy()
     {
-        if (IsClient)
-        {
-            _input.OnTouchPerformed -= OnTouchPerformedHandler;
-        }
-    }
-    
-    [Rpc(SendTo.Server)]
-    private void SubmitFieldServerRpc(RpcParams rpcParams = default)
-    {
-        ulong clientId = rpcParams.Receive.SenderClientId;
-
-        Debug.Log($"Request to generate a field from the Client ID: {clientId}");
-
-        SubmitFieldClientRpc(
-            ConvertTwoDimensionalArray(_userField), 
-            RpcTarget.Single(rpcParams.Receive.SenderClientId, RpcTargetUse.Temp));
-    }
-
-    [Rpc(SendTo.SpecifiedInParams)]
-    private void SubmitFieldClientRpc(int[] convertedUserField, RpcParams rpcParams)
-    {
-        Debug.Log("Initializing the field");
-
-        _userField = ConvertOneDimensionalArray(convertedUserField);
-
-        for (int i = 0; i < 9; i++)
-        {
-            for (int j = 0; j < 9; j++)
-            {
-                _cells[i, j].InitCell(_userField[i, j]);
-            }
-        }
+        _input.OnTouchPerformed -= OnTouchPerformedHandler;
     }
 
     private void OnTouchPerformedHandler(Vector3 pos)
     {
-        if (_gameManager.IsGameActive.Value == false) return;
+        if (_gameManager.IsGameActive == false) return;
 
         float minBound = -4 * CellSize - CellSize / 2;
         float maxBound = 4 * CellSize + CellSize / 2;
@@ -126,47 +88,24 @@ public class Field : NetworkBehaviour
                 else
                 {
                     _userField[row, column] = _gameManager.SelectedDigit;
-                    ValidateCellServerRpc(row, column, ConvertTwoDimensionalArray(_userField));
+
+                    var isCorrect = _gameManager.SelectedDigit == _correctField[row, column];
+                    _cells[row, column].SetCell(_gameManager.SelectedDigit, isCorrect);
+
+                    if (isCorrect)
+                    {
+                        if (IsFieldCompleted(_userField))
+                        {
+                            OnFieldCompleted?.Invoke();
+                        }
+                    }
+                    else
+                    {
+                        OnIncorrectPlaced?.Invoke();
+                    }
                 }
             }
         }
-    }
-
-    [Rpc(SendTo.Server)]
-    private void ValidateCellServerRpc(int line, int column, int[] convertedField, RpcParams rpcParams = default)
-    {
-        Debug.Log($"Validating cell ({line}, {column}) from Client Id: {rpcParams.Receive.SenderClientId}");
-
-        int[,] field = ConvertOneDimensionalArray(convertedField);
-
-        bool isCorrect = _correctField[line, column] == field[line, column];
-
-        if (isCorrect)
-        {
-            if (IsFieldCompleted(field))
-            {
-                OnFieldCompleted?.Invoke(rpcParams.Receive.SenderClientId);
-            }
-        }
-        else
-        {
-            OnIncorrectPlaced?.Invoke(rpcParams.Receive.SenderClientId);
-        }
-
-        ValidateCellClientRpc(
-            line,
-            column,
-            field[line, column],
-            isCorrect, 
-            RpcTarget.Single(rpcParams.Receive.SenderClientId, RpcTargetUse.Temp));
-    }
-
-    [Rpc(SendTo.SpecifiedInParams)]
-    private void ValidateCellClientRpc(int line, int column, int value, bool isCorrect, RpcParams rpcParams)
-    {
-        Debug.Log($"Cell ({line}, {column}) {(isCorrect == true ? "has" : "has NOT")} been validated with value {value}.");
-
-        _cells[line, column].SetCell(value, isCorrect);
     }
 
     private bool IsFieldCompleted(int[,] field)
@@ -197,38 +136,5 @@ public class Field : NetworkBehaviour
         }
 
         Debug.Log(sb.ToString());
-    }
-
-    private int[] ConvertTwoDimensionalArray(int[,] twoDimensionalArray)
-    {
-        int rows = twoDimensionalArray.GetLength(0);
-        int cols = twoDimensionalArray.GetLength(1);
-
-        int[] oneDimensionalArray = new int[rows * cols];
-
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < cols; j++)
-            {
-                oneDimensionalArray[i * cols + j] = twoDimensionalArray[i, j];
-            }
-        }
-
-        return oneDimensionalArray;
-    }
-
-    private int[,] ConvertOneDimensionalArray(int[] oneDimensionalArray)
-    {
-        int[,] twoDimensionalArray = new int[9, 9];
-
-        for (int i = 0; i < 9; i++)
-        {
-            for (int j = 0; j < 9; j++)
-            {
-                twoDimensionalArray[i, j] = oneDimensionalArray[i * 9 + j];
-            }
-        }
-
-        return twoDimensionalArray;
     }
 }

@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Generic;
-using Unity.Netcode;
 using UnityEngine;
+using Zenject;
 
-public class SudokuGameManager : GameManager
+public class SudokuGameManager : GameManager, ISudokuModeHandler
 {
-    public event Action<ulong, uint> OnAttemptSpent;
+    public event Action<uint> OnAttemptSpent; 
 
     private const uint MaxAttempts = 3;
 
@@ -14,12 +13,24 @@ public class SudokuGameManager : GameManager
     [SerializeField] private Transform _bottomUIGroup;
 
     private Field _field;
-
-    private Dictionary<ulong, uint> _clientAttempts = new Dictionary<ulong, uint>();
+    private SudokuConfig _config;
 
     private bool _isEraseMode;
     private bool _isNotesMode;
     private int _selectedDigit;
+    private uint _leftAttempts;
+
+    public override void Initialize(GameConfig config)
+    {
+        base.Initialize(config);
+
+        Container.Bind<ISudokuModeHandler>().FromInstance(this);
+
+        _config = config as SudokuConfig;
+        Container.BindInstance(this);
+    }
+
+    public SudokuConfig Config => _config;
 
     public bool IsEraseMode
     {
@@ -39,85 +50,54 @@ public class SudokuGameManager : GameManager
         set { _selectedDigit = value; }
     }
 
-    public override void OnNetworkSpawn()
+    protected override void Start()
     {
-        base.OnNetworkSpawn();
+        base.Start();
 
-        _container.BindInstance(this).AsSingle();
+        _leftAttempts = MaxAttempts;
 
-        NetworkManager.PrefabHandler.AddHandler(_fieldPrefab.gameObject, new ZenjectNetCodeFactory(_fieldPrefab.gameObject, _container));
-        NetworkManager.PrefabHandler.AddHandler(_topUIGroup.gameObject, new ZenjectNetCodeFactory(_topUIGroup.gameObject, _container));
-
-        if (IsServer)
-        {
-            SpawnField();
-
-            _field.OnFieldCompleted += FieldCompletedHandler;
-            _field.OnIncorrectPlaced += IncorrectPlacedHandler;
-
-            NetworkManager.Singleton.OnClientConnectedCallback += ClientConnectedHandler;
-        }
-
+        SpawnField();
         SpawnUI();
+
+        _field.OnFieldCompleted += FieldCompletedHandler;
+        _field.OnIncorrectPlaced += IncorrectPlacedHandler;
     }
 
-    public override void OnNetworkDespawn()
+    private void OnDestroy()
     {
-        base.OnNetworkDespawn();
-
-        if (IsServer)
-        {
-            _field.OnFieldCompleted -= FieldCompletedHandler;
-            _field.OnIncorrectPlaced -= IncorrectPlacedHandler;
-            NetworkManager.Singleton.OnClientConnectedCallback -= ClientConnectedHandler;
-        }
+        _field.OnFieldCompleted -= FieldCompletedHandler;
+        _field.OnIncorrectPlaced -= IncorrectPlacedHandler;
     }
 
     private void SpawnField()
     {
-        _field = Instantiate(_fieldPrefab);
-        _container.Inject(_field);
-        var fieldNetworkObject = _field.GetComponent<NetworkObject>();
-        fieldNetworkObject.Spawn();
+        _field = Container.InstantiatePrefabForComponent<Field>(_fieldPrefab);
     }
 
     private void SpawnUI()
     {
-        if (IsServer)
-        {
-            var topUIInstance = Instantiate(_topUIGroup);
-            _container.InjectGameObject(topUIInstance.gameObject);
-            var topUINetworkObject = topUIInstance.GetComponent<NetworkObject>();
-            topUINetworkObject.Spawn();
-            topUINetworkObject.TrySetParent(GameHUD.transform, false);
-        }
+        var canvas = FindObjectOfType<GameHUD>();
 
-        if (IsClient)
-        {
-            var topyUIInstance = _container.InstantiatePrefab(_bottomUIGroup);
-            topyUIInstance.transform.SetParent(GameHUD.transform, false);
-        }
+        var topUIGroupInstance = Instantiate(_topUIGroup, canvas.transform);
+        Container.InjectGameObject(topUIGroupInstance.gameObject);
+
+        Container.InstantiatePrefab(_bottomUIGroup, canvas.transform);
     }
 
-    private void FieldCompletedHandler(ulong clientId)
+    private void FieldCompletedHandler()
     {
-        ProcessVictory(clientId);
+        ProcessGameOver(GameOverResultType.UserWon);
     }
 
-    private void ClientConnectedHandler(ulong clientId)
+    private void IncorrectPlacedHandler()
     {
-        _clientAttempts[clientId] = MaxAttempts;
-    }
+        _leftAttempts--;
 
-    private void IncorrectPlacedHandler(ulong clientId)
-    {
-        _clientAttempts[clientId]--;
+        OnAttemptSpent?.Invoke(_leftAttempts);
 
-        OnAttemptSpent?.Invoke(clientId, _clientAttempts[clientId]);
-
-        if (_clientAttempts[clientId] == 0)
+        if (_leftAttempts == 0)
         {
-            ProcessDefeat(clientId);
+            ProcessGameOver(GameOverResultType.UserLost);
         }
-    } 
+    }
 }

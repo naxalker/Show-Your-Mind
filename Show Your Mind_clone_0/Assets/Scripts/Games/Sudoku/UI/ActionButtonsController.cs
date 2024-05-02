@@ -10,15 +10,15 @@ public class ActionButtonsController : MonoBehaviour
     [SerializeField] private Toggle _notesModeButton;
     [SerializeField] private Toggle[] _digitButtons;
 
-    private SudokuGameManager _gameManager;
+    private ISudokuModeHandler _modeHandler;
     private ColorPalette _palette;
 
     private Toggle _currentDigitButton;
 
     [Inject]
-    private void Construct(SudokuGameManager gameManager, ColorPalette palette)
+    private void Construct(ISudokuModeHandler modeHandler, ColorPalette palette)
     {
-        _gameManager = gameManager;
+        _modeHandler = modeHandler;
         _palette = palette;
     }
 
@@ -38,13 +38,13 @@ public class ActionButtonsController : MonoBehaviour
                 _currentDigitButton.isOn = false;
             }
 
-            _gameManager.IsEraseMode = isOn;
+            _modeHandler.IsEraseMode = isOn;
             ChangeButtonColor(_eraseButton);
         });
 
         _notesModeButton.onValueChanged.AddListener((isOn) =>
         {
-            _gameManager.IsNotesMode = isOn;
+            _modeHandler.IsNotesMode = isOn;
             ChangeButtonColor(_notesModeButton);
         });
 
@@ -57,12 +57,12 @@ public class ActionButtonsController : MonoBehaviour
                 if (isOn)
                 {
                     _currentDigitButton = _digitButtons[localI];
-                    _gameManager.SelectedDigit = localI + 1;
+                    _modeHandler.SelectedDigit = localI + 1;
                     _eraseButton.isOn = false;
                 }
                 else
                 {
-                    _gameManager.SelectedDigit = 0;
+                    _modeHandler.SelectedDigit = 0;
                 }
 
                 ChangeButtonColor(_digitButtons[localI]);
