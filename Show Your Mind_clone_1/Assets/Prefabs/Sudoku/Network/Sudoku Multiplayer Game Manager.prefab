@@ -66,6 +66,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22466622ec834184c84a22c8b421b5e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _fieldPrefab: {fileID: 6861951492360503738, guid: 806c58aea9a4fb647b07ae9b385c0b63, type: 3}
+  _fieldPrefab: {fileID: 5940542288055064048, guid: 806c58aea9a4fb647b07ae9b385c0b63, type: 3}
   _topUIGroup: {fileID: 1566730465324850247, guid: 069a1888acb97b941ac61bbc89125964, type: 3}
   _bottomUIGroup: {fileID: 2621102519633483327, guid: cf463fb56182ed140a7d45dd2bed4279, type: 3}

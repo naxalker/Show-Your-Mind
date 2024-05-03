@@ -7,6 +7,11 @@ public class SceneLoader
         _zenjectSceneLoader = zenjectSceneLoader;
     }
 
+    public void Load(SceneID sceneId)
+    {
+        _zenjectSceneLoader.Load((int)sceneId);
+    }
+
     public void Load(GameManager gameManager, GameConfig gameConfig)
     {
         _zenjectSceneLoader.Load(container =>

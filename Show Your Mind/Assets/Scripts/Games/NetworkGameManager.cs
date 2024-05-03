@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.ComponentModel;
 using Unity.Netcode;
 using UnityEngine;
 using Zenject;
@@ -21,18 +22,21 @@ public abstract class NetworkGameManager : NetworkBehaviour, INetworkGameResultV
         }
     }
 
-    protected DiContainer _container;
-    protected GameHUD GameHUD;
+    protected DiContainer Container {  get; private set; }
+    protected GameHUD GameHUD { get; private set; }
 
     [Inject]
     private void Construct(DiContainer container)
     {
-        _container = container;
+        Debug.Log("Construct");
+        Container = container;
     }
 
     public override void OnNetworkSpawn()
     {
         Debug.Log(GetType().Name);
+
+        Container.Bind<ITimeCounter>().FromInstance(this);
 
         if (IsServer)
         {
@@ -95,7 +99,7 @@ public abstract class NetworkGameManager : NetworkBehaviour, INetworkGameResultV
         {
             yield return delay;
 
-            Time.Value += 1f;
+            GameTime += 1f;
         }
     }
 }

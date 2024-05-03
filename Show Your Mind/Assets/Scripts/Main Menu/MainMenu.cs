@@ -127,6 +127,8 @@ public class MainMenu : MonoBehaviour
         if (_menuGameConfigs[_currentGameIndex].MultiplayerGameManager != null)
         {
             _playMultiplayerButton.interactable = true;
+
+            _sceneLoader.Load(SceneID.Test);
         }
         else
         {

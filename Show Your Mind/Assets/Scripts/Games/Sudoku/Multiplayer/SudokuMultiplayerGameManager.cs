@@ -43,10 +43,11 @@ public class SudokuMultiplayerGameManager : NetworkGameManager, ISudokuModeHandl
     {
         base.OnNetworkSpawn();
 
-        _container.BindInstance(this).AsSingle();
+        Container.BindInstance(this).AsSingle();
+        Container.Bind<ISudokuModeHandler>().FromInstance(this);
 
-        NetworkManager.PrefabHandler.AddHandler(_fieldPrefab.gameObject, new ZenjectNetCodeFactory(_fieldPrefab.gameObject, _container));
-        NetworkManager.PrefabHandler.AddHandler(_topUIGroup.gameObject, new ZenjectNetCodeFactory(_topUIGroup.gameObject, _container));
+        NetworkManager.PrefabHandler.AddHandler(_fieldPrefab.gameObject, new ZenjectNetCodeFactory(_fieldPrefab.gameObject, Container));
+        NetworkManager.PrefabHandler.AddHandler(_topUIGroup.gameObject, new ZenjectNetCodeFactory(_topUIGroup.gameObject, Container));
 
         if (IsServer)
         {
@@ -76,7 +77,7 @@ public class SudokuMultiplayerGameManager : NetworkGameManager, ISudokuModeHandl
     private void SpawnField()
     {
         _field = Instantiate(_fieldPrefab);
-        _container.Inject(_field);
+        Container.Inject(_field);
         var fieldNetworkObject = _field.GetComponent<NetworkObject>();
         fieldNetworkObject.Spawn();
     }
@@ -86,7 +87,7 @@ public class SudokuMultiplayerGameManager : NetworkGameManager, ISudokuModeHandl
         if (IsServer)
         {
             var topUIInstance = Instantiate(_topUIGroup);
-            _container.InjectGameObject(topUIInstance.gameObject);
+            Container.InjectGameObject(topUIInstance.gameObject);
             var topUINetworkObject = topUIInstance.GetComponent<NetworkObject>();
             topUINetworkObject.Spawn();
             topUINetworkObject.TrySetParent(GameHUD.transform, false);
@@ -94,7 +95,7 @@ public class SudokuMultiplayerGameManager : NetworkGameManager, ISudokuModeHandl
 
         if (IsClient)
         {
-            var topyUIInstance = _container.InstantiatePrefab(_bottomUIGroup);
+            var topyUIInstance = Container.InstantiatePrefab(_bottomUIGroup);
             topyUIInstance.transform.SetParent(GameHUD.transform, false);
         }
     }

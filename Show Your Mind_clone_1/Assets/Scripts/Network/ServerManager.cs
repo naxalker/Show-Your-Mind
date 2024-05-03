@@ -13,7 +13,7 @@ public class ServerManager : MultiplayerManager
         NetworkManager.Singleton.StartServer();
         
         var gameManagerInstance = Object.Instantiate(Config.MultiplayerGameManager.gameObject);
-        Container.Inject(gameManagerInstance);
+        Container.InjectGameObject(gameManagerInstance);
         var gameManagerNetworkObject = gameManagerInstance.GetComponent<NetworkObject>();
         gameManagerNetworkObject.Spawn();
     }
