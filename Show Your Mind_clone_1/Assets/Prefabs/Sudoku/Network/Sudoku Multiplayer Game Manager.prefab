@@ -63,9 +63,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 7076035582345322665}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 22466622ec834184c84a22c8b421b5e3, type: 3}
+  m_Script: {fileID: 11500000, guid: 492e871c806abd8459d189c364cbe40a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _fieldPrefab: {fileID: 5940542288055064048, guid: 806c58aea9a4fb647b07ae9b385c0b63, type: 3}
-  _topUIGroup: {fileID: 1566730465324850247, guid: 069a1888acb97b941ac61bbc89125964, type: 3}
+  _topUIGroup: {fileID: 1566730465324850247, guid: d353192fafb4627429c913f2f0d9bb68, type: 3}
   _bottomUIGroup: {fileID: 2621102519633483327, guid: cf463fb56182ed140a7d45dd2bed4279, type: 3}

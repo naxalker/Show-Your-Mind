@@ -17,13 +17,13 @@ public class GameTime : MonoBehaviour
 
     private void Start()
     {
-        _timeCounter.GameTimeChanged += GameTimeValueChangedHandler;
+        _timeCounter.OnGameTimeChanged += GameTimeValueChangedHandler;
         _timeLabel = GetComponent<TMP_Text>();
     }
 
     private void OnDestroy()
     {
-        _timeCounter.GameTimeChanged -= GameTimeValueChangedHandler;
+        _timeCounter.OnGameTimeChanged -= GameTimeValueChangedHandler;
     }
 
     private void GameTimeValueChangedHandler(float newTime)

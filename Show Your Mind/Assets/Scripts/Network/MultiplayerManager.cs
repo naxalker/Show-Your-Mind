@@ -2,10 +2,10 @@
 
 public abstract class MultiplayerManager : IInitializable
 {
-    protected readonly MenuGameConfig Config;
+    protected readonly GameConfig Config;
     protected readonly DiContainer Container;
 
-    public MultiplayerManager(DiContainer container, MenuGameConfig config)
+    public MultiplayerManager(DiContainer container, GameConfig config)
     {
         Config = config;
         Container = container;
